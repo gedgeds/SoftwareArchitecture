@@ -5,16 +5,19 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using SoftwareArchitecture.Data;
 using SoftwareArchitecture.Models;
 
 namespace SoftwareArchitecture.Controllers
 {
     public class EmployeesController : Controller
     {
+        private readonly IEmployeeRepository _repository;
         private readonly SoftwareArchitectureContext _context;
 
-        public EmployeesController(SoftwareArchitectureContext context)
+        public EmployeesController(SoftwareArchitectureContext context, IEmployeeRepository repository)
         {
+            _repository = repository;
             _context = context;
         }
 
@@ -57,8 +60,9 @@ namespace SoftwareArchitecture.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(employee);
-                await _context.SaveChangesAsync();
+                await _repository.Add(employee);
+                //_context.Add(employee);
+                //await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(employee);

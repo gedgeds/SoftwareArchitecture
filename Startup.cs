@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using SoftwareArchitecture.Models;
+using SoftwareArchitecture.Data;
 
 namespace SoftwareArchitecture
 {
@@ -38,6 +39,8 @@ namespace SoftwareArchitecture
 
             services.AddDbContext<SoftwareArchitectureContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("SoftwareArchitectureContext")));
+
+            services.AddTransient<IEmployeeRepository, EmployeeRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
