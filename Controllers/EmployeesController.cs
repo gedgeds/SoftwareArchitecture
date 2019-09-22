@@ -13,18 +13,16 @@ namespace SoftwareArchitecture.Controllers
     public class EmployeesController : Controller
     {
         private readonly IEmployeeRepository _repository;
-        private readonly SoftwareArchitectureContext _context;
 
-        public EmployeesController(SoftwareArchitectureContext context, IEmployeeRepository repository)
+        public EmployeesController(IEmployeeRepository repository)
         {
             _repository = repository;
-            _context = context;
         }
 
         // GET: Employees
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Employee.ToListAsync());
+            return View(await _repository.GetAll());
         }
 
         // GET: Employees/Details/5
@@ -35,8 +33,7 @@ namespace SoftwareArchitecture.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employee
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var employee = await _repository.Get(id);
             if (employee == null)
             {
                 return NotFound();
@@ -61,8 +58,6 @@ namespace SoftwareArchitecture.Controllers
             if (ModelState.IsValid)
             {
                 await _repository.Add(employee);
-                //_context.Add(employee);
-                //await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(employee);
@@ -76,7 +71,7 @@ namespace SoftwareArchitecture.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employee.FindAsync(id);
+            var employee = await _repository.Get(id);
             if (employee == null)
             {
                 return NotFound();
@@ -100,8 +95,9 @@ namespace SoftwareArchitecture.Controllers
             {
                 try
                 {
-                    _context.Update(employee);
-                    await _context.SaveChangesAsync();
+                    await _repository.Update(employee);
+                    //_context.Update(employee);
+                    //await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -127,8 +123,7 @@ namespace SoftwareArchitecture.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employee
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var employee = await _repository.Get(id);
             if (employee == null)
             {
                 return NotFound();
@@ -142,15 +137,14 @@ namespace SoftwareArchitecture.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var employee = await _context.Employee.FindAsync(id);
-            _context.Employee.Remove(employee);
-            await _context.SaveChangesAsync();
+            var employee = await _repository.Get(id);
+            await _repository.Remove(employee);
             return RedirectToAction(nameof(Index));
         }
 
         private bool EmployeeExists(int id)
         {
-            return _context.Employee.Any(e => e.Id == id);
+            return _repository.IsExisting(id);
         }
     }
 }
