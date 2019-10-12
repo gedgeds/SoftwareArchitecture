@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SoftwareArchitecture.Data;
 using SoftwareArchitecture.Models;
 
 namespace SoftwareArchitecture.Controllers
@@ -13,25 +14,23 @@ namespace SoftwareArchitecture.Controllers
     [ApiController]
     public class EmployeesApiController : ControllerBase
     {
-        private readonly SoftwareArchitectureContext _context;
+        private readonly IRepository<Employee> _repository;
 
-        public EmployeesApiController(SoftwareArchitectureContext context)
+        public EmployeesApiController(IRepository<Employee> repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
-        // GET: api/EmployeesApi
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Employee>>> GetEmployee()
         {
-            return await _context.Employee.ToListAsync();
+            return Ok(await _repository.GetAll());
         }
 
-        // GET: api/EmployeesApi/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Employee>> GetEmployee(int id)
         {
-            var employee = await _context.Employee.FindAsync(id);
+            var employee = await _repository.Get(id);
 
             if (employee == null)
             {
@@ -41,7 +40,6 @@ namespace SoftwareArchitecture.Controllers
             return employee;
         }
 
-        // PUT: api/EmployeesApi/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutEmployee(int id, Employee employee)
         {
@@ -50,56 +48,34 @@ namespace SoftwareArchitecture.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(employee).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmployeeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            _repository.Update(employee);
+            await _repository.Save();
 
             return NoContent();
         }
 
-        // POST: api/EmployeesApi
         [HttpPost]
         public async Task<ActionResult<Employee>> PostEmployee(Employee employee)
         {
-            _context.Employee.Add(employee);
-            await _context.SaveChangesAsync();
+            await _repository.Add(employee);
+            await _repository.Save();
 
             return CreatedAtAction("GetEmployee", new { id = employee.Id }, employee);
         }
 
-        // DELETE: api/EmployeesApi/5
         [HttpDelete("{id}")]
         public async Task<ActionResult<Employee>> DeleteEmployee(int id)
         {
-            var employee = await _context.Employee.FindAsync(id);
+            var employee = await _repository.Get(id);
             if (employee == null)
             {
                 return NotFound();
             }
 
-            _context.Employee.Remove(employee);
-            await _context.SaveChangesAsync();
+            _repository.Remove(employee);
+            await _repository.Save();
 
             return employee;
-        }
-
-        private bool EmployeeExists(int id)
-        {
-            return _context.Employee.Any(e => e.Id == id);
         }
     }
 }
