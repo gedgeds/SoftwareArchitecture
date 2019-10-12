@@ -8,9 +8,9 @@ namespace SoftwareArchitecture.Controllers
 {
     public class EmployeesController : Controller
     {
-        private readonly IEmployeeRepository _repository;
+        private readonly IRepository<Employee> _repository;
 
-        public EmployeesController(IEmployeeRepository repository)
+        public EmployeesController(IRepository<Employee> repository)
         {
             _repository = repository;
         }
@@ -54,6 +54,7 @@ namespace SoftwareArchitecture.Controllers
             if (ModelState.IsValid)
             {
                 await _repository.Add(employee);
+                await _repository.Save();
                 return RedirectToAction(nameof(Index));
             }
             return View(employee);
@@ -89,23 +90,8 @@ namespace SoftwareArchitecture.Controllers
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    await _repository.Update(employee);
-                    //_context.Update(employee);
-                    //await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!EmployeeExists(employee.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                _repository.Update(employee);
+                await _repository.Save();
                 return RedirectToAction(nameof(Index));
             }
             return View(employee);
@@ -134,13 +120,9 @@ namespace SoftwareArchitecture.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var employee = await _repository.Get(id);
-            await _repository.Remove(employee);
+            _repository.Remove(employee);
+            await _repository.Save();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool EmployeeExists(int id)
-        {
-            return _repository.IsExisting(id);
         }
     }
 }

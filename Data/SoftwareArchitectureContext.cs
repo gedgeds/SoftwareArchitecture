@@ -9,6 +9,6 @@ namespace SoftwareArchitecture.Models
         {
         }
 
-        public DbSet<SoftwareArchitecture.Models.Employee> Employee { get; set; }
+        public DbSet<Employee> Employee { get; set; }
     }
 }
