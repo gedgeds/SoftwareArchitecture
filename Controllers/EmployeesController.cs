@@ -1,6 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using SoftwareArchitecture.Data;
 using SoftwareArchitecture.Models;
 
@@ -9,6 +14,7 @@ namespace SoftwareArchitecture.Controllers
     public class EmployeesController : Controller
     {
         private readonly IRepository<Employee> _repository;
+        private const string URL = "http://localhost:5000";
 
         public EmployeesController(IRepository<Employee> repository)
         {
@@ -17,7 +23,14 @@ namespace SoftwareArchitecture.Controllers
 
         public async Task<IActionResult> Index()
         {
-            return View(await _repository.GetAll());
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(URL);
+                var response = await client.GetAsync($"/api/employeesApi");
+                var result = JsonConvert.DeserializeObject<List<Employee>>(await response.Content.ReadAsStringAsync());
+
+                return View(result);
+            }
         }
 
         public async Task<IActionResult> Details(int? id)
@@ -47,26 +60,26 @@ namespace SoftwareArchitecture.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _repository.Add(employee);
-                await _repository.Save();
-                return RedirectToAction(nameof(Index));
+                var content = new StringContent(JsonConvert.SerializeObject(employee), Encoding.UTF8, "application/json");
+                using (var client = new HttpClient())
+                {
+                    client.BaseAddress = new Uri(URL);
+                    var response = await client.PostAsync($"/api/employeesApi", content);
+                    return RedirectToAction("Index", "Employees");
+                }
             }
             return View(employee);
         }
 
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
+            using (var client = new HttpClient())
             {
-                return NotFound();
+                client.BaseAddress = new Uri(URL);
+                var response = await client.GetAsync($"/api/employeesApi/{id.ToString()}");
+                var result = JsonConvert.DeserializeObject<Employee>(await response.Content.ReadAsStringAsync());
+                return View(result);
             }
-
-            var employee = await _repository.Get(id);
-            if (employee == null)
-            {
-                return NotFound();
-            }
-            return View(employee);
         }
 
         [HttpPost]
@@ -80,37 +93,38 @@ namespace SoftwareArchitecture.Controllers
 
             if (ModelState.IsValid)
             {
-                _repository.Update(employee);
-                await _repository.Save();
-                return RedirectToAction(nameof(Index));
+                using (var client = new HttpClient())
+                {
+                    client.BaseAddress = new Uri(URL);
+                    var content = new StringContent(JsonConvert.SerializeObject(employee), Encoding.UTF8, "application/json");
+                    var response = await client.PutAsync($"/api/employeesApi/{employee.Id.ToString()}", content);
+                    return RedirectToAction("Index", "Employees");
+                }
             }
             return View(employee);
         }
 
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
+            using (var client = new HttpClient())
             {
-                return NotFound();
+                client.BaseAddress = new Uri(URL);
+                var employee = await client.GetAsync($"/api/employeesApi/{id.ToString()}");
+                var result = JsonConvert.DeserializeObject<Employee>(await employee.Content.ReadAsStringAsync());
+                return View(result);
             }
-
-            var employee = await _repository.Get(id);
-            if (employee == null)
-            {
-                return NotFound();
-            }
-
-            return View(employee);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var employee = await _repository.Get(id);
-            _repository.Remove(employee);
-            await _repository.Save();
-            return RedirectToAction(nameof(Index));
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(URL);
+                await client.DeleteAsync($"/api/employeesApi/{id.ToString()}");
+                return RedirectToAction("Index", "Employees");
+            }
         }
     }
 }
